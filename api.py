@@ -19,7 +19,7 @@ ENC_MODELS_DIR = ROOT+"model/encoder"
 SYN_MODELS_DIR = ROOT+"model/synthesizer"
 VOC_MODELS_DIR = ROOT+"model/vocoder"
 # Path of inference wav
-TEMP_FOLDER = ROOT+"temp"
+TEMP_FOLDER = "static/temp"
 TEMP_SOURCE_AUDIO = "static/temp/temp_source.wav"
 TEMP_RESULT_AUDIO = "static/temp/temp_result.wav"
 
