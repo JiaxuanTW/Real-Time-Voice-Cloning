@@ -15,20 +15,15 @@ import matplotlib.pyplot as plt
 
 ROOT = "rtvc/"
 # Constants
-AUDIO_SAMPLES_DIR = "samples"
-ENC_MODELS_DIR = ROOT+"static/model/encoder"
-SYN_MODELS_DIR = ROOT+"static/model/synthesizer"
-VOC_MODELS_DIR = ROOT+"static/model/vocoder"
+ENC_MODELS_DIR = ROOT+"model/encoder"
+SYN_MODELS_DIR = ROOT+"model/synthesizer"
+VOC_MODELS_DIR = ROOT+"model/vocoder"
 # Path of inference wav
-TEMP_FOLDER = ROOT+"static/temp"
-TEMP_SOURCE_AUDIO = ROOT+"static/temp/temp_source.wav"
-TEMP_RESULT_AUDIO = ROOT+"static/temp/temp_result.wav"
+TEMP_FOLDER = ROOT+"temp"
+TEMP_SOURCE_AUDIO = "static/temp/temp_source.wav"
+TEMP_RESULT_AUDIO = "static/temp/temp_result.wav"
 
-# Load local sample audio as options
-if os.path.isdir(AUDIO_SAMPLES_DIR):
-    audio_input_selection = {}
-    for file in Path(AUDIO_SAMPLES_DIR).glob("*.wav"):
-        audio_input_selection[file.name] = file
+
 # Pre-Load models
 if os.path.isdir(SYN_MODELS_DIR):
     synthesizers = {}
@@ -107,10 +102,6 @@ def plot_embed(embed, name="noName"):
     plt.show()
 
 
-def get_audios() -> Dict[str, Path]:
-    return audio_input_selection
-
-
 def get_encoders() -> Dict[str, Path]:
     return encoders
 
@@ -121,6 +112,35 @@ def get_synthesizers() -> Dict[str, Path]:
 
 def get_vocoder() -> Dict[str, Path]:
     return vocoders
+
+
+def synthesize_voice(speaker_path: Path,
+                     encoder: str,
+                     synthesizer: str,
+                     vocoder: str,
+                     text: str = 'Hello, I am a robot'
+                     ):
+    encoder_path = get_encoders()[encoder]
+    synthesizer_path = get_synthesizers()[synthesizer]
+    vocoder_path = get_vocoder()[vocoder]
+    fname = speaker_path.name.split('.')[0]
+
+    wav, spec, embed = embed_extract(speaker_path, encoder_path)
+    plot_spec(spec, fname)
+    plot_embed(embed, fname)
+    write(TEMP_SOURCE_AUDIO, 16000, wav.astype(np.float32))
+
+    generate = RTVC()
+    generate.init_model(encoder_path, synthesizer_path, vocoder_path)
+    embed_wav, spec, embed = generate.synthesize(
+        synthesizer_path, vocoder_path, text, embed)
+    plot_spec(spec, f"output-{fname}")
+    plot_embed(embed, f"output-{fname}")
+
+    write(
+        TEMP_RESULT_AUDIO, generate.sample_rate, embed_wav.astype(
+            np.float32)
+    )  # Make sure we get the correct wav
 
 
 class RTVC:
