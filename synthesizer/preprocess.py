@@ -28,6 +28,8 @@ def preprocess_dataset(datasets_root: Path, out_dir: Path, n_processes: int, ski
 
     # Preprocess the dataset
     speaker_dirs = list(chain.from_iterable(input_dir.glob("*") for input_dir in input_dirs))
+
+    print("speaker_dir:", speaker_dirs)
     func = partial(preprocess_speaker, out_dir=out_dir, skip_existing=skip_existing,
                    hparams=hparams, no_alignments=no_alignments)
     job = Pool(n_processes).imap(func, speaker_dirs)
@@ -45,7 +47,7 @@ def preprocess_dataset(datasets_root: Path, out_dir: Path, n_processes: int, ski
     hours = (timesteps / sample_rate) / 3600
     print("The dataset consists of %d utterances, %d mel frames, %d audio timesteps (%.2f hours)." %
           (len(metadata), mel_frames, timesteps, hours))
-    print("Max input length (text chars): %d" % max(len(m[5]) for m in metadata))
+    # print("Max input length (text chars): %d" % max(len(m[5]) for m in metadata))
     print("Max mel frames length: %d" % max(int(m[4]) for m in metadata))
     print("Max audio timesteps length: %d" % max(int(m[3]) for m in metadata))
 

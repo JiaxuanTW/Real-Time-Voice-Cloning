@@ -1,5 +1,5 @@
-from synthesizer.utils.symbols import symbols
-from synthesizer.utils import cleaners
+from ..utils.symbols import symbols
+from ..utils import cleaners
 import re
 
 
