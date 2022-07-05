@@ -126,16 +126,16 @@ def synthesize_voice(speaker_path: Path,
     fname = speaker_path.name.split('.')[0]
 
     wav, spec, embed = embed_extract(speaker_path, encoder_path)
-    plot_spec(spec, fname)
-    plot_embed(embed, fname)
+    plot_spec(spec, "temp_input")
+    plot_embed(embed, "temp_input")
     write(TEMP_SOURCE_AUDIO, 16000, wav.astype(np.float32))
 
     generate = RTVC()
     generate.init_model(encoder_path, synthesizer_path, vocoder_path)
     embed_wav, spec, embed = generate.synthesize(
         synthesizer_path, vocoder_path, text, embed)
-    plot_spec(spec, f"output-{fname}")
-    plot_embed(embed, f"output-{fname}")
+    plot_spec(spec, "temp_output")
+    plot_embed(embed, "temp_output")
 
     write(
         TEMP_RESULT_AUDIO, generate.sample_rate, embed_wav.astype(
