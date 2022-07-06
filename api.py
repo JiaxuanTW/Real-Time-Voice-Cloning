@@ -210,6 +210,8 @@ class RTVC:
 
         punctuation = "[!,.?\n]"  # punctuate and split/clean text
         texts = re.split(punctuation, texts)
+        while '' in texts:
+            texts.remove('')
         embed = embed
         embeds = [embed] * len(texts)
         specs = self.synthesizer.synthesize_spectrograms(texts, embeds)
