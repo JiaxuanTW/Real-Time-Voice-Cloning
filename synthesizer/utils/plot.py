@@ -26,7 +26,7 @@ def plot_alignment(alignment, path, title=None, split_title=False, max_len=None)
 		aspect="auto",
 		origin="lower",
 		interpolation="none")
-	fig.colorbar(im, ax=ax)
+	fig.colorbar(im, ax=ax, ticks=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
 	xlabel = "Decoder timestep"
 
 	if split_title:

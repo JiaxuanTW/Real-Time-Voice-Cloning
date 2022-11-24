@@ -1,6 +1,7 @@
 from .encoder import inference as encoder
 from .synthesizer.inference import Synthesizer
-from .vocoder import inference as rnn_vocoder
+from .vocoder.wavernn import inference as rnn_vocoder
+from .vocoder.hifigan import inference as gan_vocoder
 from pathlib import Path
 
 import numpy as np
@@ -82,7 +83,8 @@ def plot_spec(spec, name="noName"):
     plt.figure(figsize=(10, 2))
     plt.axis("off")
     plt.imshow(spec, aspect="auto", interpolation="none")
-    plt.savefig(f'{TEMP_FOLDER}/spec-{name}.png', transparent=True)
+    plt.savefig(f'{TEMP_FOLDER}/spec-{name}.png', transparent=True, dpi=300, bbox_inches='tight',
+                pad_inches=0)
     plt.show()
 
 
@@ -130,7 +132,8 @@ def synthesize_voice(speaker_path: Path,
     plot_embed(embed, "temp_input")
     write(TEMP_SOURCE_AUDIO, 16000, wav.astype(np.float32))
 
-    generate = RTVC()
+    seed_num = np.random.randint(0, 9999)
+    generate = RTVC(seed=seed_num)
     generate.init_model(encoder_path, synthesizer_path, vocoder_path)
     embed_wav, spec, embed = generate.synthesize(
         synthesizer_path, vocoder_path, text, embed)
@@ -158,7 +161,7 @@ class RTVC:
         synthesize: load text and target embed to generate fake voice of target
     """
 
-    def __init__(self, vocoder=rnn_vocoder, seed=4234) -> None:
+    def __init__(self, vocoder=rnn_vocoder, seed=5678) -> None:
         self.synthesizer = None
         self.sample_rate = None
         self.vocoder = vocoder
@@ -172,7 +175,19 @@ class RTVC:
         self.sample_rate = Synthesizer.sample_rate
 
     def init_vocoder(self, model_fpath: Path) -> None:
-        self.vocoder.load_model(model_fpath)
+        model_config_fpath = None
+
+        if model_fpath.name is not None and model_fpath.name.find("hifigan") > -1:
+            self.vocoder = gan_vocoder
+            model_config_fpath = list(model_fpath.parent.rglob("*.json"))[0]
+            print("using hifigan vocoder")
+
+        else:
+            self.vocoder = rnn_vocoder
+            model_config_fpath = list(model_fpath.parent.rglob("*.json"))[0]
+            print("using wavrnn vocoder")
+
+        self.vocoder.load_model(model_fpath, model_config_fpath)
 
     def init_model(self, encoder_path: Path, synthesizer_path: Path, vocoder_path: Path) -> None:
         self.init_encoder(encoder_path)
@@ -224,7 +239,7 @@ class RTVC:
         if not self.vocoder.is_loaded() or self.seed is not None:
             self.init_vocoder(vocoder_path)
 
-        wav = self.vocoder.infer_waveform(spec)
+        wav, sample_rate = self.vocoder.infer_waveform(spec)
 
         # Add breaks
         b_ends = np.cumsum(np.array(breaks) * Synthesizer.hparams.hop_size)

@@ -2,6 +2,7 @@ import torch
 from . import audio
 from .hparams import hparams
 from .models.tacotron import Tacotron
+from .utils.plot import plot_alignment
 from .utils.symbols import symbols
 from .utils.text import text_to_sequence
 from ..vocoder.display import simple_table
@@ -9,6 +10,7 @@ from pathlib import Path
 from typing import Union, List
 import numpy as np
 import librosa
+from pypinyin import lazy_pinyin, Style
 
 
 class Synthesizer:
@@ -85,16 +87,22 @@ class Synthesizer:
         if not self.is_loaded():
             self.load()
 
+        texts = [" ".join(lazy_pinyin(v, style=Style.BOPOMOFO, neutral_tone_with_five=True)) for v in texts]
+        # print("Texts " + str(texts))
         # Preprocess text inputs
         inputs = [text_to_sequence(text.strip(), hparams.tts_cleaner_names) for text in texts]
         if not isinstance(embeddings, list):
             embeddings = [embeddings]
+
+        # print("Inputs " + str(inputs))
 
         # Batch inputs
         batched_inputs = [inputs[i:i+hparams.synthesis_batch_size]
                              for i in range(0, len(inputs), hparams.synthesis_batch_size)]
         batched_embeds = [embeddings[i:i+hparams.synthesis_batch_size]
                              for i in range(0, len(embeddings), hparams.synthesis_batch_size)]
+
+        # print("Batch Inputs " + str(batched_inputs))
 
         specs = []
         for i, batch in enumerate(batched_inputs, 1):
@@ -116,6 +124,9 @@ class Synthesizer:
 
             # Inference
             _, mels, alignments = self._model.generate(chars, speaker_embeddings)
+            for i in range(len(alignments)):
+                plot_alignment(alignments[i].detach().cpu().numpy(), f'static/temp/alignmet{i}.png')
+
             mels = mels.detach().cpu().numpy()
             for m in mels:
                 # Trim silence from end of each spectrogram
